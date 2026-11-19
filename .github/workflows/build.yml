@@ -2,7 +2,7 @@ name: Build APK
 on:
   push:
     paths:
-      - 'project*.zip'
+      - '*.zip'
       - '.github/workflows/build.yml'
   workflow_dispatch:
 permissions:
@@ -12,6 +12,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -21,8 +23,11 @@ jobs:
           gradle-version: '8.9'
       - name: Unpack project
         run: |
+          f=$(git log -1 --diff-filter=AM --name-only --pretty=format: -- '*.zip' | grep -m1 '\.zip$' || true)
+          if [ -z "$f" ]; then f=$(ls -t *.zip | head -1); fi
+          echo "Using: $f"
           mkdir src
-          unzip -q project*.zip -d src
+          unzip -q "$f" -d src
       - name: Build APK
         working-directory: src
         run: gradle assembleDebug --no-daemon --stacktrace
